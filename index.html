@@ -510,7 +510,7 @@
   let vendas  = [];
   let _lock   = false;
 
-  const ANTHROPIC_API_KEY = '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';
+  const WORKER_URL = 'https://SEU_WORKER.SEU_USUARIO.workers.dev';
 
   function fmt(v) {
     return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -657,7 +657,6 @@
   async function handleFile(type, input) {
     const file = input.files[0];
     if (!file) return;
-    const apiKey = ANTHROPIC_API_KEY;
     const zone   = document.getElementById('zone-' + type);
     const status = document.getElementById('status-' + type);
     zone.classList.add('loading');
@@ -670,24 +669,12 @@
         ? `Este PDF contém operações de COMPRA de USDT. Extraia todas as operações e retorne APENAS um JSON válido, sem markdown, no formato: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. qtd = quantidade de USDT comprada, preco = preço unitário em reais, taxa = taxa/custo adicional em reais (0 se não houver). Liste todas as operações encontradas.`
         : `Este PDF contém operações de VENDA de USDT. Extraia todas as operações e retorne APENAS um JSON válido, sem markdown, no formato: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. qtd = quantidade de USDT vendida, preco = preço unitário em reais, taxa = taxa/custo em reais (0 se não houver). Liste todas as operações encontradas.`;
 
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const resp = await fetch(WORKER_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
-              { type: 'text', text: prompt }
-            ]
-          }]
+          pdf: b64,
+          prompt: prompt
         })
       });
 
@@ -697,7 +684,8 @@
       }
 
       const data   = await resp.json();
-      const text   = data.content.map(c => c.text || '').join('');
+      if (!resp.ok) throw new Error(data.error || 'Erro no servidor');
+      const text   = data.result || '';
       const clean  = text.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(clean);
       const ops    = parsed.operacoes || [];
