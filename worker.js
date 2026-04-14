@@ -14,7 +14,7 @@
  * Altere ALLOWED_ORIGIN abaixo para o seu endereço real.
  */
 
-const ALLOWED_ORIGIN = 'https://SEU_USUARIO.github.io';
+const ALLOWED_ORIGIN = 'https://jaimelukaz.github.io';
 
 export default {
   async fetch(request, env) {
