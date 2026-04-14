@@ -680,11 +680,11 @@
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error?.message || 'Erro na API (' + resp.status + ')');
+        const msg = (typeof err.error === 'string' ? err.error : err.error?.message) || ('HTTP ' + resp.status);
+        throw new Error(msg);
       }
 
       const data   = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Erro no servidor');
       const text   = data.result || '';
       const clean  = text.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(clean);
