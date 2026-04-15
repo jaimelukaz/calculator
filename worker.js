@@ -1,17 +1,13 @@
 /**
- * Cloudflare Worker — Proxy seguro para Anthropic API
+ * Cloudflare Worker — Proxy seguro para OpenAI API
  *
  * COMO CONFIGURAR:
- * 1. Acesse https://dash.cloudflare.com e crie uma conta grátis
- * 2. Vá em Workers & Pages → Create → Create Worker
- * 3. Cole este código no editor e clique em Deploy
- * 4. Vá em Settings → Variables → Add variable
- *    Nome: ANTHROPIC_API_KEY  |  Valor: sk-ant-...  |  marque "Encrypt"
- * 5. Copie a URL do worker (ex: https://cambio-usdt.seuusuario.workers.dev)
- * 6. Cole essa URL no index.html na variável WORKER_URL
+ * 1. Acesse https://dash.cloudflare.com e abra seu Worker existente
+ * 2. Cole este código no editor e clique em Deploy
+ * 3. Em Settings → Variables, remova ANTHROPIC_API_KEY (opcional) e adicione:
+ *    Nome: OPENAI_API_KEY  |  Valor: sk-...  |  marque "Encrypt"
  *
- * CORS: o worker só aceita requisições do seu domínio GitHub Pages.
- * Altere ALLOWED_ORIGIN abaixo para o seu endereço real.
+ * CORS: o worker só aceita requisições do domínio abaixo.
  */
 
 const ALLOWED_ORIGIN = 'https://jaimelukaz.github.io';
@@ -19,45 +15,46 @@ const ALLOWED_ORIGIN = 'https://jaimelukaz.github.io';
 export default {
   async fetch(request, env) {
 
-    // Responde preflight CORS
     if (request.method === 'OPTIONS') {
-      return corsResponse(null, 204, env);
+      return corsResponse(null, 204);
     }
 
     if (request.method !== 'POST') {
-      return corsResponse(JSON.stringify({ error: 'Method not allowed' }), 405, env);
+      return corsResponse(JSON.stringify({ error: 'Method not allowed' }), 405);
     }
 
     let body;
     try {
       body = await request.json();
     } catch {
-      return corsResponse(JSON.stringify({ error: 'Body inválido' }), 400, env);
+      return corsResponse(JSON.stringify({ error: 'Body inválido' }), 400);
     }
 
     const { pdf, prompt } = body;
 
     if (!pdf || !prompt) {
-      return corsResponse(JSON.stringify({ error: 'Campos pdf e prompt são obrigatórios' }), 400, env);
+      return corsResponse(JSON.stringify({ error: 'Campos pdf e prompt são obrigatórios' }), 400);
     }
 
-    // Chama a API da Anthropic — a chave fica segura aqui no servidor
-    const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
+    const openaiResp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': 'Bearer ' + env.OPENAI_API_KEY,
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'gpt-4o-mini',
         max_tokens: 8000,
+        response_format: { type: 'json_object' },
         messages: [{
           role: 'user',
           content: [
             {
-              type: 'document',
-              source: { type: 'base64', media_type: 'application/pdf', data: pdf }
+              type: 'file',
+              file: {
+                filename: 'document.pdf',
+                file_data: 'data:application/pdf;base64,' + pdf
+              }
             },
             { type: 'text', text: prompt }
           ]
@@ -65,23 +62,21 @@ export default {
       })
     });
 
-    const data = await anthropicResp.json();
+    const data = await openaiResp.json();
 
-    if (!anthropicResp.ok) {
+    if (!openaiResp.ok) {
       return corsResponse(
-        JSON.stringify({ error: data.error?.message || 'Erro na API Anthropic' }),
-        anthropicResp.status,
-        env
+        JSON.stringify({ error: data.error?.message || 'Erro na API OpenAI' }),
+        openaiResp.status
       );
     }
 
-    // Repassa só o texto da resposta — não expõe metadados internos
-    const text = data.content.map(c => c.text || '').join('');
-    return corsResponse(JSON.stringify({ result: text }), 200, env);
+    const text = data.choices?.[0]?.message?.content || '';
+    return corsResponse(JSON.stringify({ result: text }), 200);
   }
 };
 
-function corsResponse(body, status, env) {
+function corsResponse(body, status) {
   const headers = {
     'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
