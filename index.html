@@ -645,8 +645,9 @@
     const sfU = totalU - totalQtdV;
     const sfB = iniB - totalInv + totalRec;
 
-    document.getElementById('s-usdt-c').textContent = fN(totalQtdC, 0) + ' USDT';
-    document.getElementById('s-usdt-v').textContent = fN(totalQtdV, 0) + ' USDT';
+    const fUsdt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 8 });
+    document.getElementById('s-usdt-c').textContent = fUsdt(totalQtdC) + ' USDT';
+    document.getElementById('s-usdt-v').textContent = fUsdt(totalQtdV) + ' USDT';
     document.getElementById('s-inv').textContent    = fmt(totalInv);
     document.getElementById('s-rec').textContent    = fmt(totalRec);
     document.getElementById('s-lucro').textContent  = fmt(lucro);
