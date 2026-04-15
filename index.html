@@ -244,21 +244,25 @@
 
     /* Metrics */
     .metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 10px;
+      display: flex;
+      flex-direction: column;
       margin-top: .75rem;
+      border-top: .5px solid var(--border);
     }
 
     .metric {
-      background: var(--bg-sec);
-      border-radius: var(--radius);
-      padding: .85rem 1rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      column-gap: 16px;
+      row-gap: 2px;
+      padding: .7rem 2px;
+      border-bottom: .5px solid var(--border);
+      align-items: baseline;
     }
 
-    .mlabel { font-size: 11px; color: var(--text-sec); margin-bottom: 4px; }
-    .mval { font-size: 18px; font-weight: 500; color: var(--text); line-height: 1.2; }
-    .msub { font-size: 11px; color: var(--text-sec); margin-top: 3px; }
+    .mlabel { font-size: 13px; color: var(--text-sec); grid-column: 1; }
+    .mval { font-size: 15px; font-weight: 500; color: var(--text); grid-column: 2; text-align: right; white-space: nowrap; }
+    .msub { font-size: 11px; color: var(--text-ter); grid-column: 2; text-align: right; }
     .metric.pos .mval { color: var(--success); }
     .metric.neg .mval { color: var(--danger); }
 
@@ -355,7 +359,6 @@
       .saldo-grid { grid-template-columns: 1fr; }
       .saldo-arrow { display: none; }
       .sf-grid { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: 1fr 1fr; }
     }
 
     @media print {
@@ -375,7 +378,12 @@
         color: #000 !important;
         margin-top: 1rem;
       }
-      #export-area .metric,
+      #export-area .metric {
+        background: transparent !important;
+        border-bottom: .5px solid #ccc !important;
+        break-inside: avoid;
+      }
+      #export-area .metrics { border-top: .5px solid #ccc !important; }
       #export-area .sf-item {
         background: #f5f5f5 !important;
         border: .5px solid #ccc;
