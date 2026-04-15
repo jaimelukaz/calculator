@@ -357,6 +357,44 @@
       .sf-grid { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: 1fr 1fr; }
     }
+
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0;
+        font-size: 11pt;
+      }
+      .container { max-width: none; }
+      body > .container > *:not(#export-area) { display: none !important; }
+      #export-area {
+        display: block !important;
+        page-break-inside: avoid;
+      }
+      #export-area .sec-title {
+        color: #000 !important;
+        margin-top: 1rem;
+      }
+      #export-area .metric,
+      #export-area .sf-item {
+        background: #f5f5f5 !important;
+        border: .5px solid #ccc;
+        break-inside: avoid;
+      }
+      #export-area .sf-item.pos { background: #e1f5ee !important; }
+      #export-area .sf-item.neg { background: #faece7 !important; }
+      #export-area .metric .mval,
+      #export-area .sf-val { color: #000 !important; }
+      #export-area .metric.pos .mval { color: #085041 !important; }
+      #export-area .metric.neg .mval { color: #4a1b0c !important; }
+      #export-area .detail-table,
+      #export-area .detail-table th,
+      #export-area .detail-table td { color: #000 !important; }
+      #export-area .badge.ok { background: #e1f5ee !important; color: #085041 !important; }
+      #export-area .badge.bad { background: #faece7 !important; color: #4a1b0c !important; }
+      #export-area .warn { display: none !important; }
+      @page { margin: 14mm; }
+    }
   </style>
 </head>
 <body>
@@ -451,6 +489,8 @@
 
   <hr class="divider">
 
+  <div id="export-area">
+
   <!-- Resumo -->
   <p class="sec-title">Resumo do dia</p>
   <div class="metrics">
@@ -501,6 +541,13 @@
       </thead>
       <tbody id="detail-body"></tbody>
     </table>
+  </div>
+
+  </div>
+  <!-- /export-area -->
+
+  <div style="margin-top:1.5rem;text-align:right">
+    <button onclick="window.print()">Exportar PDF</button>
   </div>
 
 </div>
@@ -666,8 +713,8 @@
     try {
       const b64 = await toBase64(file);
       const prompt = type === 'compras'
-        ? `Este PDF contém operações de COMPRA de USDT. Extraia todas as operações e retorne APENAS um JSON válido, sem markdown, no formato: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. qtd = quantidade de USDT comprada, preco = preço unitário em reais, taxa = taxa/custo adicional em reais (0 se não houver). Liste todas as operações encontradas.`
-        : `Este PDF contém operações de VENDA de USDT. Extraia todas as operações e retorne APENAS um JSON válido, sem markdown, no formato: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. qtd = quantidade de USDT vendida, preco = preço unitário em reais, taxa = taxa/custo em reais (0 se não houver). Liste todas as operações encontradas.`;
+        ? `Este PDF é um relatório de COMPRAS (entradas) de USDT. As colunas relevantes são COTAÇÃO (preço unitário em reais) e USDT (quantidade). Retorne APENAS um JSON válido, sem markdown, no formato: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. qtd = valor da coluna USDT, preco = valor da coluna COTAÇÃO, taxa = sempre 0 (o relatório não contém taxa). Ignore a coluna TOTAL (BRL) — não é necessária. Ignore linhas de cabeçalho e linhas de totalização. Liste uma entrada por operação.`
+        : `Este PDF é um relatório de VENDAS (saídas) de USDT. As colunas relevantes são Cotação (preço unitário em reais) e Valor cripto (quantidade de USDT). Retorne APENAS um JSON válido, sem markdown, no formato: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. qtd = valor da coluna Valor cripto, preco = valor da coluna Cotação, taxa = sempre 0 (o relatório não contém taxa). Ignore a coluna Valor fiat (BRL) — não é necessária. Ignore linhas de cabeçalho e linhas de totalização. Liste uma entrada por operação.`;
 
       const resp = await fetch(WORKER_URL, {
         method: 'POST',
