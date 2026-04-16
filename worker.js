@@ -43,7 +43,7 @@ export default {
         'Authorization': 'Bearer ' + env.OPENAI_API_KEY,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         max_tokens: 8000,
         response_format: { type: 'json_object' },
         messages: [{
