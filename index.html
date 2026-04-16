@@ -643,7 +643,8 @@
 
     const sfUc = document.getElementById('sf-usdt-card');
     sfUc.classList.remove('pos', 'neg');
-    if (sfU >= iniU) sfUc.classList.add('pos'); else sfUc.classList.add('neg');
+    if (sfU > 0.000001) sfUc.classList.add('pos');
+    else if (sfU < -0.000001) sfUc.classList.add('neg');
 
     const db = document.getElementById('detail-body');
     db.innerHTML = '';
