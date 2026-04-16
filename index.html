@@ -437,21 +437,9 @@
   <!-- Saldo Inicial -->
   <p class="sec-title">Saldo inicial do dia</p>
   <div class="card">
-    <div class="saldo-grid">
-      <div class="saldo-field">
-        <label>USDT em carteira</label>
-        <input type="number" id="ini-usdt" value="0" min="0" step="1" oninput="iniChanged('usdt')">
-      </div>
-      <div class="saldo-arrow">&#8644;</div>
-      <div class="saldo-field">
-        <label>BRL em caixa</label>
-        <input type="number" id="ini-brl" value="0" min="0" step="0.01" oninput="iniChanged('brl')">
-      </div>
-    </div>
-    <div class="cotacao-row">
-      <label>Cotação de referência:</label>
-      <input type="number" id="ini-cotacao" value="5.72" min="0.01" step="0.01" style="width:90px" oninput="iniChanged('cotacao')">
-      <span style="color:var(--text-ter)">R$/USDT</span>
+    <div class="saldo-field">
+      <label>USDT em carteira</label>
+      <input type="number" id="ini-usdt" value="0" min="0" step="1" oninput="calcSummary()">
     </div>
   </div>
 
@@ -517,16 +505,11 @@
 
   <!-- Saldo Final -->
   <p class="sec-title">Saldo final estimado</p>
-  <div class="sf-grid">
+  <div class="sf-grid" style="grid-template-columns:1fr">
     <div class="sf-item" id="sf-usdt-card">
       <div class="sf-label">USDT em carteira</div>
       <div class="sf-val" id="sf-usdt">—</div>
       <div class="sf-sub" id="sf-usdt-sub"></div>
-    </div>
-    <div class="sf-item" id="sf-brl-card">
-      <div class="sf-label">BRL em caixa</div>
-      <div class="sf-val" id="sf-brl">—</div>
-      <div class="sf-sub" id="sf-brl-sub"></div>
     </div>
   </div>
 
@@ -574,19 +557,6 @@
     return v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
   }
 
-  function iniChanged(src) {
-    if (_lock) return;
-    _lock = true;
-    const uEl = document.getElementById('ini-usdt');
-    const bEl = document.getElementById('ini-brl');
-    const cEl = document.getElementById('ini-cotacao');
-    const c = parseFloat(cEl.value) || 0;
-    if (src === 'usdt' && c > 0) bEl.value = ((parseFloat(uEl.value) || 0) * c).toFixed(2);
-    else if (src === 'brl' && c > 0) uEl.value = ((parseFloat(bEl.value) || 0) / c).toFixed(4);
-    else if (src === 'cotacao' && c > 0) bEl.value = ((parseFloat(uEl.value) || 0) * c).toFixed(2);
-    _lock = false;
-    calcSummary();
-  }
 
   function renderTable(type) {
     const arr = type === 'compras' ? compras : vendas;
@@ -638,20 +608,18 @@
 
   function calcSummary() {
     const iniU = parseFloat(document.getElementById('ini-usdt').value) || 0;
-    const iniB = parseFloat(document.getElementById('ini-brl').value) || 0;
     const totalQtdC = compras.reduce((a, r) => a + r.qtd, 0);
     const totalInv  = compras.reduce((a, r) => a + (r.qtd * r.preco + r.taxa), 0);
     const totalQtdV = vendas.reduce((a, r) => a + r.qtd, 0);
     const totalRec  = vendas.reduce((a, r) => a + (r.qtd * r.preco - r.taxa), 0);
     const totalU = iniU + totalQtdC;
-    const pmC = totalU > 0 ? (iniB + totalInv) / totalU : 0;
+    const pmC = totalQtdC > 0 ? totalInv / totalQtdC : 0;
     const pmV = totalQtdV > 0 ? vendas.reduce((a, r) => a + r.qtd * r.preco, 0) / totalQtdV : 0;
     const spread = pmV > 0 && pmC > 0 ? (pmV - pmC) / pmV * 100 : 0;
     const custoV = pmC * totalQtdV;
     const lucro  = totalRec - custoV;
     const margem = totalRec > 0 ? lucro / totalRec * 100 : 0;
     const sfU = totalU - totalQtdV;
-    const sfB = iniB - totalInv + totalRec;
 
     const fUsdt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 8 });
     document.getElementById('s-usdt-c').textContent = fUsdt(totalQtdC) + ' USDT';
@@ -672,15 +640,10 @@
 
     document.getElementById('sf-usdt').textContent    = fN(sfU, 4) + ' USDT';
     document.getElementById('sf-usdt-sub').textContent = 'início ' + fN(iniU, 0) + ' + compras ' + fN(totalQtdC, 0) + ' − vendas ' + fN(totalQtdV, 0);
-    document.getElementById('sf-brl').textContent      = fmt(sfB);
-    document.getElementById('sf-brl-sub').textContent  = 'início ' + fmt(iniB) + ' − compras ' + fmt(totalInv) + ' + vendas ' + fmt(totalRec);
 
     const sfUc = document.getElementById('sf-usdt-card');
-    const sfBc = document.getElementById('sf-brl-card');
     sfUc.classList.remove('pos', 'neg');
-    sfBc.classList.remove('pos', 'neg');
     if (sfU >= iniU) sfUc.classList.add('pos'); else sfUc.classList.add('neg');
-    if (sfB >= iniB) sfBc.classList.add('pos'); else sfBc.classList.add('neg');
 
     const db = document.getElementById('detail-body');
     db.innerHTML = '';
