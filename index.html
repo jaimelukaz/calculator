@@ -439,7 +439,7 @@
   <div class="card">
     <div class="saldo-field">
       <label>USDT em carteira</label>
-      <input type="number" id="ini-usdt" value="0" min="0" step="1" oninput="calcSummary()">
+      <input type="number" id="ini-usdt" value="0" min="0" step="0.00000001" oninput="calcSummary()">
     </div>
   </div>
 
@@ -574,7 +574,7 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="idx">${i + 1}</td>
-        <td><input type="number" value="${r.qtd}" min="0" step="1" oninput="upd('${type}',${i},'qtd',this.value)"></td>
+        <td><input type="number" value="${r.qtd}" min="0" step="0.00000001" oninput="upd('${type}',${i},'qtd',this.value)"></td>
         <td><input type="number" value="${r.preco}" min="0" step="0.01" oninput="upd('${type}',${i},'preco',this.value)"></td>
         <td><input type="number" value="${r.taxa}" min="0" step="0.01" oninput="upd('${type}',${i},'taxa',this.value)"></td>
         <td class="num">${fmt(total)}</td>
@@ -621,9 +621,9 @@
     const margem = totalRec > 0 ? lucro / totalRec * 100 : 0;
     const sfU = totalU - totalQtdV;
 
-    const fUsdt = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 8 });
-    document.getElementById('s-usdt-c').textContent = fUsdt(totalQtdC) + ' USDT';
-    document.getElementById('s-usdt-v').textContent = fUsdt(totalQtdV) + ' USDT';
+    const fUsdt8 = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+    document.getElementById('s-usdt-c').textContent = fUsdt8(totalQtdC) + ' USDT';
+    document.getElementById('s-usdt-v').textContent = fUsdt8(totalQtdV) + ' USDT';
     document.getElementById('s-inv').textContent    = fmt(totalInv);
     document.getElementById('s-rec').textContent    = fmt(totalRec);
     document.getElementById('s-lucro').textContent  = fmt(lucro);
@@ -638,8 +638,8 @@
 
     document.getElementById('warn-saldo').style.display = totalQtdV > totalU + 0.001 ? 'block' : 'none';
 
-    document.getElementById('sf-usdt').textContent    = fN(sfU, 4) + ' USDT';
-    document.getElementById('sf-usdt-sub').textContent = 'início ' + fN(iniU, 0) + ' + compras ' + fN(totalQtdC, 0) + ' − vendas ' + fN(totalQtdV, 0);
+    document.getElementById('sf-usdt').textContent    = fUsdt8(sfU) + ' USDT';
+    document.getElementById('sf-usdt-sub').textContent = 'início ' + fUsdt8(iniU) + ' + compras ' + fUsdt8(totalQtdC) + ' − vendas ' + fUsdt8(totalQtdV);
 
     const sfUc = document.getElementById('sf-usdt-card');
     sfUc.classList.remove('pos', 'neg');
@@ -663,7 +663,7 @@
       const tr  = document.createElement('tr');
       tr.innerHTML = `
         <td style="color:var(--text-ter)">${i + 1}</td>
-        <td>${fN(v.qtd, 0)}</td>
+        <td>${fUsdt8(v.qtd)}</td>
         <td>${fmt(rl)}</td>
         <td>${pmC > 0 ? fmt(cm) : '—'}</td>
         <td>${fmt(v.taxa)}</td>
