@@ -72,8 +72,8 @@ export default {
       );
     }
 
-    const text = data.choices?.[0]?.message?.content || '';
-    return corsResponse(JSON.stringify({ result: text }), 200);
+    const result = data.choices?.[0]?.message?.content || '';
+    return corsResponse(JSON.stringify({ result }), 200);
   }
 };
 
