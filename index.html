@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Câmbio USDT — Calculadora de Lucro</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -414,19 +415,19 @@
   </header>
 
   <!-- Upload -->
-  <p class="sec-title">Importar PDFs (opcional)</p>
+  <p class="sec-title">Importar arquivos (opcional)</p>
   <div class="upload-grid">
     <div class="upload-zone" id="zone-compras" onclick="document.getElementById('file-compras').click()">
-      <input type="file" id="file-compras" accept="application/pdf" style="display:none" onchange="handleFile('compras',this)">
+      <input type="file" id="file-compras" accept="application/pdf,.pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none" onchange="handleFile('compras',this)">
       <div class="uz-icon">&#8595;</div>
-      <div class="uz-label">PDF de compras</div>
+      <div class="uz-label">Compras (PDF ou Excel)</div>
       <div class="uz-sub">clique para selecionar</div>
       <div id="status-compras" class="uz-status"></div>
     </div>
     <div class="upload-zone" id="zone-vendas" onclick="document.getElementById('file-vendas').click()">
-      <input type="file" id="file-vendas" accept="application/pdf" style="display:none" onchange="handleFile('vendas',this)">
+      <input type="file" id="file-vendas" accept="application/pdf,.pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:none" onchange="handleFile('vendas',this)">
       <div class="uz-icon">&#8595;</div>
-      <div class="uz-label">PDF de vendas</div>
+      <div class="uz-label">Vendas (PDF ou Excel)</div>
       <div class="uz-sub">clique para selecionar</div>
       <div id="status-vendas" class="uz-status"></div>
     </div>
@@ -679,23 +680,33 @@
     if (!file) return;
     const zone   = document.getElementById('zone-' + type);
     const status = document.getElementById('status-' + type);
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
     zone.classList.add('loading');
     status.className = 'uz-status';
-    status.innerHTML = '<span class="spinner"></span> lendo PDF...';
+    status.innerHTML = '<span class="spinner"></span> lendo ' + (isExcel ? 'planilha' : 'PDF') + '...';
 
     try {
-      const b64 = await toBase64(file);
       const prompt = type === 'compras'
-        ? `Este PDF contém operações de COMPRA/ENTRADA de USDT. O formato pode variar. Extraia TODAS as linhas de operação com USDT (ignore outras criptomoedas como TRX). Para cada operação extraia: qtd = quantidade de USDT (valor absoluto), preco = cotação ou preço unitário em reais (procure em colunas como "Cotação", ou no campo "Caixa"/"Notas" após "@" como "G6@5,019" → 5.019; se não encontrar, use 0), taxa = sempre 0. Retorne APENAS um JSON válido, sem markdown: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. IMPORTANTE: extraia TODAS as linhas do documento do início ao fim — não pare antes de processar a última linha. Ignore cabeçalhos, totalizações e linhas que não sejam USDT.`
-        : `Este PDF contém operações de VENDA/SAÍDA de USDT. O formato pode variar. Extraia TODAS as linhas de operação com USDT (ignore outras criptomoedas como TRX). Para cada operação extraia: qtd = quantidade de USDT (valor absoluto, sem sinal negativo), preco = cotação ou preço unitário em reais (procure em colunas como "Cotação", ou no campo "Caixa"/"Notas" após "@" como "G18@5,042" → 5.042; se não encontrar, use 0), taxa = sempre 0. Retorne APENAS um JSON válido, sem markdown: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. IMPORTANTE: extraia TODAS as linhas do documento do início ao fim — não pare antes de processar a última linha. Ignore cabeçalhos, totalizações e linhas que não sejam USDT.`;
+        ? `Este documento contém operações de COMPRA/ENTRADA de USDT. O formato pode variar. Extraia TODAS as linhas de operação com USDT (ignore outras criptomoedas como TRX). Para cada operação extraia: qtd = quantidade de USDT (valor absoluto), preco = cotação ou preço unitário em reais (procure em colunas como "Cotação", ou no campo "Caixa"/"Notas" após "@" como "G6@5,019" → 5.019; se não encontrar, use 0), taxa = sempre 0. Retorne APENAS um JSON válido, sem markdown: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. IMPORTANTE: extraia TODAS as linhas do documento do início ao fim — não pare antes de processar a última linha. Ignore cabeçalhos, totalizações e linhas que não sejam USDT.`
+        : `Este documento contém operações de VENDA/SAÍDA de USDT. O formato pode variar. Extraia TODAS as linhas de operação com USDT (ignore outras criptomoedas como TRX). Para cada operação extraia: qtd = quantidade de USDT (valor absoluto, sem sinal negativo), preco = cotação ou preço unitário em reais (procure em colunas como "Cotação", ou no campo "Caixa"/"Notas" após "@" como "G18@5,042" → 5.042; se não encontrar, use 0), taxa = sempre 0. Retorne APENAS um JSON válido, sem markdown: {"operacoes":[{"qtd":0,"preco":0,"taxa":0}]}. IMPORTANTE: extraia TODAS as linhas do documento do início ao fim — não pare antes de processar a última linha. Ignore cabeçalhos, totalizações e linhas que não sejam USDT.`;
+
+      let payload;
+      if (isExcel) {
+        const buf = await file.arrayBuffer();
+        const wb  = XLSX.read(buf, { type: 'array' });
+        const text = wb.SheetNames
+          .map(n => `## Aba: ${n}\n${XLSX.utils.sheet_to_csv(wb.Sheets[n])}`)
+          .join('\n\n');
+        payload = { text, prompt };
+      } else {
+        const b64 = await toBase64(file);
+        payload = { pdf: b64, prompt };
+      }
 
       const resp = await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pdf: b64,
-          prompt: prompt
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!resp.ok) {

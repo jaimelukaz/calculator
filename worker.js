@@ -30,11 +30,24 @@ export default {
       return corsResponse(JSON.stringify({ error: 'Body inválido' }), 400);
     }
 
-    const { pdf, prompt } = body;
+    const { pdf, text, prompt } = body;
 
-    if (!pdf || !prompt) {
-      return corsResponse(JSON.stringify({ error: 'Campos pdf e prompt são obrigatórios' }), 400);
+    if ((!pdf && !text) || !prompt) {
+      return corsResponse(JSON.stringify({ error: 'Campos pdf|text e prompt são obrigatórios' }), 400);
     }
+
+    const content = pdf
+      ? [
+          {
+            type: 'file',
+            file: {
+              filename: 'document.pdf',
+              file_data: 'data:application/pdf;base64,' + pdf
+            }
+          },
+          { type: 'text', text: prompt }
+        ]
+      : [{ type: 'text', text: prompt + '\n\n--- DADOS DA PLANILHA (CSV) ---\n' + text }];
 
     const openaiResp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -46,19 +59,7 @@ export default {
         model: 'gpt-4o',
         max_tokens: 8000,
         response_format: { type: 'json_object' },
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'file',
-              file: {
-                filename: 'document.pdf',
-                file_data: 'data:application/pdf;base64,' + pdf
-              }
-            },
-            { type: 'text', text: prompt }
-          ]
-        }]
+        messages: [{ role: 'user', content }]
       })
     });
 

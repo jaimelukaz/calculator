@@ -14,9 +14,10 @@ GitHub Pages (index.html)  -->  Cloudflare Worker (worker.js)  -->  OpenAI API (
 
 ## Funcionalidades
 
-- **Importacao de PDF**: upload de PDFs de compras (entradas) e vendas (saidas). Suporta dois formatos:
+- **Importacao de arquivos**: upload de PDFs ou planilhas Excel (`.xlsx`, `.xls`) de compras (entradas) e vendas (saidas). Suporta dois formatos:
   - Relatorio de ordens (ORDENS SELL/BUY) com colunas Cotacao, USDT, Total BRL
   - Extratos cripto com cotacao embutida no campo Caixa/Notas (ex: `G6@5,019`)
+  - Excel: parsing client-side com SheetJS, convertido em CSV antes de enviar ao Worker
 - **Entrada manual**: tabelas editaveis para adicionar/remover operacoes de compra e venda com quantidade, preco unitario e taxa
 - **Saldo inicial**: campo para informar USDT em carteira no inicio do dia
 - **Calculos automaticos**:
